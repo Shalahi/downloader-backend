@@ -25,6 +25,10 @@ app.post('/download', async (req, res) => {
       noCheckCertificates: true,
       noWarnings: true,
       preferFreeFormats: true,
+      forceIpv4: true,
+      retries: 3,
+      fragmentRetries: 3,
+      socketTimeout: 30000,
       format: formatSelector,
       addHeader: [
         'referer:youtube.com',
@@ -60,7 +64,8 @@ app.post('/download', async (req, res) => {
     if (details.includes('not available in your country') || details.includes('geo-restricted')) {
       return res.status(422).json({ error: 'الفيديو غير متاح في منطقة الخادم الحالية.' });
     }
-    res.status(500).json({ error: 'تعذر استخراج الوسائط من الرابط' });
+    const detail = (error.stderr || error.message || '').replace(/\s+/g, ' ').trim().slice(0, 240);
+    res.status(502).json({ error: `فشل محرك الاستخراج: ${detail || 'سبب غير معروف'}` });
   }
 });
 
