@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const youtubedl = require('youtube-dl-exec');
 
 const app = express();
 app.use(cors());
@@ -13,27 +14,27 @@ app.post('/download', async (req, res) => {
   }
 
   try {
-    const apiUrl = `https://api.vreden.my.id/api/download/allinone?url=${encodeURIComponent(url)}`;
-    const response = await fetch(apiUrl);
-    const data = await response.json();
+    const output = await youtubedl(url, {
+      dumpSingleJson: true,
+      noCheckCertificates: true,
+      noWarnings: true,
+      preferFreeFormats: true,
+      addHeader: [
+        'referer:youtube.com',
+        'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      ]
+    });
 
-    if (data && data.result) {
-      const media = data.result;
-      const mediaUrl = media.url || media.video || media.audio || media.download?.url;
-
-      if (!mediaUrl) {
-        throw new Error('لم يتم العثور على رابط تنزيل');
-      }
-
+    if (output && output.url) {
       return res.json({
-        title: media.title || 'Media Download',
-        url: mediaUrl,
-        thumbnail: media.thumbnail || '',
-        ext: 'mp4'
+        title: output.title,
+        url: output.url,
+        thumbnail: output.thumbnail,
+        ext: output.ext || 'mp4'
       });
     }
 
-    throw new Error('فشل الاستخراج');
+    throw new Error('لم يتم العثور على رابط مباشر');
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'تعذر استخراج الوسائط من الرابط' });
