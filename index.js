@@ -7,18 +7,25 @@ app.use(cors());
 app.use(express.json());
 
 app.post('/download', async (req, res) => {
-  const { url } = req.body;
+  const { url, quality = '1080', format = 'video' } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: 'يرجى تزويد رابط الوسائط' });
   }
 
   try {
+    const allowedQualities = ['1080', '720', '480', '360'];
+    const selectedQuality = allowedQualities.includes(String(quality)) ? String(quality) : '1080';
+    const formatSelector = format === 'audio'
+      ? 'bestaudio/best'
+      : `bestvideo[height<=${selectedQuality}]+bestaudio/best[height<=${selectedQuality}]/best`;
+
     const output = await youtubedl(url, {
       dumpSingleJson: true,
       noCheckCertificates: true,
       noWarnings: true,
       preferFreeFormats: true,
+      format: formatSelector,
       addHeader: [
         'referer:youtube.com',
         'user-agent:Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
