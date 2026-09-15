@@ -48,8 +48,17 @@ app.post('/download', async (req, res) => {
   } catch (error) {
     console.error(error);
     const details = `${error.stderr || ''} ${error.message || ''}`.toLowerCase();
-    if (details.includes('video is unavailable') || details.includes('private video') || details.includes('sign in')) {
+    if (details.includes("sign in to confirm you're not a bot") || details.includes('confirm you\'re not a bot')) {
+      return res.status(429).json({ error: 'YouTube طلب التحقق من المتصفح مؤقتًا. جرّب رابطًا عامًا آخر لاحقًا.' });
+    }
+    if (details.includes('private video') || details.includes('sign in to watch')) {
       return res.status(422).json({ error: 'الفيديو غير متاح للعامة أو يتطلب تسجيل الدخول.' });
+    }
+    if (details.includes('video is unavailable') || details.includes('video unavailable')) {
+      return res.status(422).json({ error: 'الفيديو محذوف أو غير متاح حاليًا.' });
+    }
+    if (details.includes('not available in your country') || details.includes('geo-restricted')) {
+      return res.status(422).json({ error: 'الفيديو غير متاح في منطقة الخادم الحالية.' });
     }
     res.status(500).json({ error: 'تعذر استخراج الوسائط من الرابط' });
   }
