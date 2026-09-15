@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { exec } = require('yt-dlp-exec');
+const ytdl = require('@distube/ytdl-core');
 
 const app = express();
 app.use(cors());
@@ -14,23 +14,18 @@ app.post('/download', async (req, res) => {
   }
 
   try {
-    // استخراج معلومات الفيديو ورابط التحميل المباشر
-    const output = await exec(url, {
-      dumpSingleJson: true,
-      noWarnings: true,
-      noCallHome: true,
-      format: 'best',
-    });
+    const info = await ytdl.getInfo(url);
+    const format = ytdl.chooseFormat(info.formats, { quality: 'highestvideo' });
 
     res.json({
-      title: output.title,
-      url: output.url,
-      thumbnail: output.thumbnail,
-      ext: output.ext
+      title: info.videoDetails.title,
+      url: format.url,
+      thumbnail: info.videoDetails.thumbnails[0]?.url || '',
+      ext: 'mp4'
     });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'تعذر استخراج رابط الفيديو' });
+    res.status(500).json({ error: 'تعذر استخراج رابط الفيديو، تأكد من صحة الرابط' });
   }
 });
 
