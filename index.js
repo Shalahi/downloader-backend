@@ -17,8 +17,8 @@ app.post('/download', async (req, res) => {
     const allowedQualities = ['1080', '720', '480', '360'];
     const selectedQuality = allowedQualities.includes(String(quality)) ? String(quality) : '1080';
     const formatSelector = format === 'audio'
-      ? 'bestaudio/best'
-      : `bestvideo[height<=${selectedQuality}]+bestaudio/best[height<=${selectedQuality}]/best`;
+      ? 'bestaudio[ext=m4a]/bestaudio/best'
+      : `best[height<=${selectedQuality}][ext=mp4]/best[height<=${selectedQuality}]/best`;
 
     const output = await youtubedl(url, {
       dumpSingleJson: true,
@@ -32,18 +32,25 @@ app.post('/download', async (req, res) => {
       ]
     });
 
-    if (output && output.url) {
+    const directUrl = output?.url || output?.requested_formats?.find((item) => item.url)?.url ||
+      output?.formats?.slice().reverse().find((item) => item.url && item.vcodec !== 'none')?.url;
+
+    if (directUrl) {
       return res.json({
-        title: output.title,
-        url: output.url,
+        title: output.title || 'Media Download',
+        url: directUrl,
         thumbnail: output.thumbnail,
-        ext: output.ext || 'mp4'
+        ext: format === 'audio' ? 'm4a' : output.ext || 'mp4'
       });
     }
 
     throw new Error('لم يتم العثور على رابط مباشر');
   } catch (error) {
     console.error(error);
+    const details = `${error.stderr || ''} ${error.message || ''}`.toLowerCase();
+    if (details.includes('video is unavailable') || details.includes('private video') || details.includes('sign in')) {
+      return res.status(422).json({ error: 'الفيديو غير متاح للعامة أو يتطلب تسجيل الدخول.' });
+    }
     res.status(500).json({ error: 'تعذر استخراج الوسائط من الرابط' });
   }
 });
