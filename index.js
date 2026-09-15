@@ -36,7 +36,8 @@ app.post('/download', async (req, res) => {
       ]
     });
 
-    const directUrl = output?.url || output?.requested_formats?.find((item) => item.url)?.url ||
+    const directUrl = output?.url || output?.requested_downloads?.find((item) => item.url)?.url ||
+      output?.requested_formats?.find((item) => item.url)?.url ||
       output?.formats?.slice().reverse().find((item) => item.url && item.vcodec !== 'none')?.url;
 
     if (directUrl) {
